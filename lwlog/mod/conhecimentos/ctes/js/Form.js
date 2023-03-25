@@ -6466,34 +6466,20 @@ Ext.define('CTE.form.Panel', {
 									text: 'CALCULAR FRETE PARA EMISSÃO DO CONHECIMENTO ELETRÔNICO',
 									scale: 'medium',
 									handler: function() {
-										var form = me.getForm();
-										
-										if (Ext.isEmpty(me.tabelaCliente)) {
-											form.findField('cte_tabela_frete').setValue('***TABELA '+ me.tomTabela + ' NÃO DEFINIDA***');
-											return false;
-										}
-										
-										var prefix = me.tabelaPrefix,
-										tabelaCliente = me.tabelaCliente[0],
+										var form = me.getForm(),
 										
 										prodGrid = me.down('#cte-cubagem-grid'),
 										prodStore = prodGrid.getStore(),
-										prodField = form.findField('prod_id'),
-										
-										redespachoField = form.findField('redespacho_id'),
-										cidadeOrigemField = form.findField('cid_id_origem'),
-										cidadeDestinoField = form.findField('cid_id_destino'),
-										destinatarioField = form.findField('clie_destinatario_id'),
-										valorCarga = form.findField('cte_valor_carga').getValue(),
 										
 										grid = me.down('#cte-componente-frete-grid'),
-										store = grid.getStore(), proxy = store.getProxy();
+										store = grid.getStore(), proxy = store.getProxy(),
 										
-										var pesoTaxado = 0;
+										pesoTaxado = 0,
+										valorCarga = form.findField('cte_valor_carga').getValue();
+										
 										prodStore.each(function(r){
 											pesoTaxado += r.get('cte_dim_peso_taxado');
 										});
-										
 										if (!pesoTaxado) {
 											form.findField('cte_peso_taxado').setValue('***PESO TAXADO NÃO DEFINIDO***');
 											return false;
@@ -6502,15 +6488,34 @@ Ext.define('CTE.form.Panel', {
 											form.findField('cte_valor_mercadoria').setValue('***VALOR MERCADORIA NÃO DEFINIDO***');
 											return false;
 										}
+										
+										proxy.setExtraParam('cte_peso_bc', pesoTaxado);
+										
+										form.findField('cte_peso_bc').setValue(pesoTaxado);
+										form.findField('cte_peso_taxado').setValue(Ext.util.Format.brDecimal(pesoTaxado) + ' kg');
+										form.findField('cte_valor_mercadoria').setValue(Ext.util.Format.brMoney(valorCarga));
+										
+										if (Ext.isEmpty(me.tabelaCliente)) {
+											form.findField('cte_tabela_frete').setValue('***TABELA '+ me.tomTabela + ' NÃO DEFINIDA***');
+											return false;
+										}
+
+										var prefix = me.tabelaPrefix,
+										tabelaCliente = me.tabelaCliente[0],
+										
+										prodField = form.findField('prod_id'),
+										
+										redespachoField = form.findField('redespacho_id'),
+										cidadeOrigemField = form.findField('cid_id_origem'),
+										cidadeDestinoField = form.findField('cid_id_destino'),
+										destinatarioField = form.findField('clie_destinatario_id');
+										
 										if (!prodField.getValue() || Ext.isEmpty(prodField.getValue())) {
 											form.findField('gt_rotulo').setValue('***PRODUTO NÃO DEFINIDO***');
 											return false;
 										}
 										
-										form.findField('cte_peso_bc').setValue(pesoTaxado);
 										form.findField('cte_tabela_frete').setValue('#' + tabelaCliente[prefix + 'id'] + ' - ' + me.tomTabela);
-										form.findField('cte_peso_taxado').setValue(Ext.util.Format.brDecimal(pesoTaxado) + ' kg');
-										form.findField('cte_valor_mercadoria').setValue(Ext.util.Format.brMoney(valorCarga));
 										
 										var notas = me.totalizarNotas(),
 										cte_modal = form.findField('cte_modal').getValue(),
@@ -6529,7 +6534,6 @@ Ext.define('CTE.form.Panel', {
 										proxy.setExtraParam('cte_id', 0);
 										proxy.setExtraParam('cte_modal', cte_modal);
 										proxy.setExtraParam('tabela_cliente', me.tomTabela);
-										proxy.setExtraParam('cte_peso_bc', pesoTaxado);
 										proxy.setExtraParam('cte_forma_pgto', form.findField('cte_forma_pgto').getValue());
 										proxy.setExtraParam('cte_valor_carga', valorCarga);
 										proxy.setExtraParam('tabela_cliente_record', Ext.encode({

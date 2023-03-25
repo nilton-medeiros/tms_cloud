@@ -1400,7 +1400,6 @@ class Controler extends App {
 			$sql.= "WHERE emp_id = ".$this->empresa->emp_id." ";
 			$sql.= "AND cf_tipo > 1 ";
 			$sql.= "ORDER BY cf_tipo, cf_id";
-			//$this->debug($sql);
 			$query = $this->query($sql);
 			while ($field = $this->fetch_object($query)) {
 				$field->ccc_tabela = $tabela_cliente_record->clie_id > 0 ? "TOMADOR" : "EMITENTE";
@@ -1478,7 +1477,7 @@ class Controler extends App {
 						$s.= "WHERE min_id = ".$tabela_cliente_record->min_id." ";
 						$s.= "AND minfx_peso_ate_kg >= ".$peso_taxado." ";
 						$s.= "ORDER BY minfx_peso_ate_kg ASC LIMIT 1";
-						$this->debug($s);
+						// $this->debug($s);
 						$q = $this->query($s);
 						$f = $this->fetch_object($q);
 
@@ -1498,7 +1497,7 @@ class Controler extends App {
 							$s.= "WHERE exp_id = ".$tabela_cliente_record->exp_id." ";
 							$s.= "AND peso_ate_kg >= ".$peso_taxado." ";
 							$s.= "ORDER BY peso_ate_kg ASC LIMIT 1";
-							$this->debug($s);
+							// $this->debug($s);
 							$q = $this->query($s);
 							$f = $this->fetch_object($q);
 
@@ -1547,7 +1546,7 @@ class Controler extends App {
 						$s.= "AND uf_origem = ".$this->escape($cidade_origem->cid_uf)." ";
 						$s.= "AND uf_destino = ".$this->escape($cidade_destino->cid_uf)." ";
 						$s.= "AND percentual > 0";
-						$this->debug($s);
+						// $this->debug($s);
 						$q = $this->query($s);
 						$percentual = $this->fetch_object($q)->percentual;
 						$this->free_result($q);
@@ -1640,16 +1639,17 @@ class Controler extends App {
 						while ($f = $this->fetch_object($q)) {
 							$_field = clone $field;
 							$_field->ccc_tabela = $f->clie_id > 0 ? "TOMADOR" : "EMITENTE";
-
+							
 							if ($f->tx_por_peso) {
 								if ($_peso_taxado > $f->tx_ate_kg && $f->tx_excedente > 0) {
 									$_field->ccc_valor = $f->tx_valor + ($_peso_taxado - $f->tx_ate_kg) * $f->tx_excedente;
 									$_field->ccc_valor_tarifa_kg = $f->tx_excedente;
 									$_field->ccc_tipo_tarifa = 'TAXA R$ '.float_to_money($f->tx_valor).' ATÉ '.float_to_decimal($f->tx_ate_kg, 1).'kg COM EXCEDENTE R$ '.float_to_money($f->tx_excedente).'/kg';
 								} else {
-									$_field->ccc_valor = $f->tx_valor;
+									$_field->ccc_valor = floatval($f->tx_valor);
 									$_field->ccc_tipo_tarifa = $f->tx_valor > 0 ? 'TAXA POR PESO SEM EXCEDENTE' : '';
-									$_field->ccc_valor_tarifa_kg = @($_field->ccc_valor / $peso_taxado);
+									$_field->cc_valor_tarifa_kg = ($_peso_taxado > 0 && $_field->ccc_valor > 0) ? ($_field->ccc_valor / $_peso_taxado) : 0;
+									$this->debug($_field);
 								}
 							} else {
 								$_field->ccc_valor = $f->tx_valor;
@@ -1725,7 +1725,7 @@ class Controler extends App {
 				$s.= "FROM desconto_taxa_clie ";
 				$s.= "WHERE cc_id = ".$field->cc_id." ";
 				$s.= "AND clie_id = ".$tomador->clie_id;
-				$this->debug($s);
+				// $this->debug($s);
 				$q = $this->query($s);
 				$existente = $this->num_rows($q) > 0;
 				$desconto = $existente ? $this->fetch_object($q) : null;
@@ -1748,7 +1748,7 @@ class Controler extends App {
 			}
 		}
 		$this->free_result($query);
-
+		$this->debug($list);
 		print json_encode(array('total'=>count($list),'data'=>$list));
 	}
 	/**
